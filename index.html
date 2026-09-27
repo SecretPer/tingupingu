@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Official Monitor Security & Portal</title>
+  <!-- Canvas Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #f7f9fc;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --primary: #ff6b81;
+      --primary-hover: #ff4757;
+      --secondary: #70a1ff;
+      --text: #2f3542;
+      --border-radius: 20px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; }
+
+    body {
+      background: var(--bg-color); color: var(--text); display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden;
+      background-image: radial-gradient(var(--secondary) 1px, transparent 1px); background-size: 30px 30px;
+    }
+
+    /* VERTICAL RULER - Hidden on mobile to save screen space */
+    .vertical-ruler {
+      position: fixed; left: 0; top: 0; width: 35px; height: 100vh; background: #2d3436; color: #ffeaa7;
+      border-right: 3px solid #ff4757; z-index: 10; display: flex; flex-direction: column; align-items: flex-end; padding-top: 120px;
+    }
+    .ruler-mark { border-bottom: 2px solid white; width: 10px; margin-bottom: 25px; position: relative; }
+    .ruler-text { position: absolute; left: 15px; top: -8px; font-size: 0.6rem; font-weight: bold; white-space: nowrap; }
+    .tingu-mark { border-color: #ff4757; width: 22px; }
+    .tingu-text { color: #ff4757; font-size: 0.7rem; background: #fff; padding: 2px 4px; border-radius: 4px; left: 25px; }
+
+    @media (max-width: 600px) {
+      .vertical-ruler { display: none; }
+    }
+
+    /* HEADER */
+    .delulu-header-bar {
+      position: sticky; top: 0; width: 100%; background: var(--card-bg); border-bottom: 2px solid #e1e8ef;
+      padding: 10px 15px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 1000;
+    }
+    .progress-container { width: 100%; max-width: 400px; height: 12px; background: #333; border-radius: 10px; margin-top: 4px; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, #e74c3c, #f1c40f); border-radius: 10px; transition: width 0.1s linear; }
+
+    /* CONTAINER & PAGES */
+    .app-container { width: 100%; max-width: 750px; padding: 15px; margin-top: 5px; z-index: 20; }
+    .page {
+      display: none; width: 100%; background: var(--card-bg); border-radius: var(--border-radius); padding: 20px 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.2); text-align: center;
+    }
+    .page.active { display: block; animation: fade-in 0.3s ease; }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+    h1 { font-size: 1.4rem; color: var(--text); margin-bottom: 10px; }
+    h2 { font-size: 1.2rem; color: var(--text); margin-bottom: 10px; }
+    p { font-size: 0.95rem; margin-bottom: 15px; line-height: 1.4; }
+
+    /* BUTTONS */
+    .btn {
+      background: var(--primary); color: white; border: none; padding: 12px 24px; font-size: 0.95rem; font-weight: 800; border-radius: 50px; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(255, 107, 129, 0.4); display: inline-flex; align-items: center; justify-content: center; margin: 6px;
+      touch-action: manipulation;
+    }
+    .btn-secondary { background: var(--secondary); box-shadow: 0 4px 12px rgba(112, 161, 255, 0.4); }
+
+    /* --- PAGE 1: CAPTCHA ROOM --- */
+    .room-canvas {
+      position: relative; width: 100%; height: 320px; margin: 15px 0; overflow: hidden; border-radius: 16px;
+      background: linear-gradient(180deg, #ffeaa7 0%, #fab1a0 100%); border: 3px solid #636e72;
+    }
+    .room-shelf { position: absolute; top: 90px; left: 10%; width: 80%; height: 16px; background: #6c5ce7; border-radius: 4px; border-bottom: 4px solid #4834d4; z-index: 3; }
+    .captcha-on-shelf { position: absolute; top: 40px; left: 50%; transform: translateX(-50%); background: #ffffff; border: 2px solid #ff4757; padding: 8px 15px; border-radius: 10px; font-weight: 900; color: #ff4757; z-index: 4; font-size: 0.85rem; white-space: nowrap; }
+
+    .character-avatar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; transition: all 0.5s ease; z-index: 6; }
+    .photo-head { width: 45px; height: 45px; border-radius: 50%; border: 3px solid #2d3436; position: relative; background-color: #fff; background-image: url('YOUR_IMAGE_URL_HERE'); background-size: cover; background-position: center; }
+    .photo-head::before, .photo-head::after { content: '😈'; position: absolute; top: -12px; font-size: 16px; }
+    .photo-head::before { left: -4px; transform: rotate(-20deg); }
+    .photo-head::after { right: -4px; transform: rotate(20deg); color: transparent; text-shadow: 0 0 0 #ff0000; }
+    .char-body { width: 5px; height: 35px; background: #2d3436; }
+    .char-arms { position: absolute; top: 48px; width: 35px; height: 4px; background: #2d3436; z-index: 5; }
+    .char-legs { width: 25px; height: 25px; border-left: 3px solid #2d3436; border-right: 3px solid #2d3436; transform: rotate(180deg); }
+    
+    .room-ladder { position: absolute; bottom: 15px; left: 50%; width: 45px; height: 150px; border-left: 5px solid #e1b12c; border-right: 5px solid #e1b12c; display: none; flex-direction: column; justify-content: space-around; z-index: 5; }
+    .ladder-rung { width: 100%; height: 4px; background: #e1b12c; }
+    .drop-in { display: flex; animation: bounceDrop 0.8s forwards; }
+    @keyframes bounceDrop { 0% { transform: translate(-50%, -250px); } 60% { transform: translate(-50%, 0); } 80% { transform: translate(-50%, -10px); } 100% { transform: translate(-50%, 0); } }
+
+    /* --- PAGE 2: ARENA --- */
+    .arena-card { background: linear-gradient(135deg, #090979 0%, #00d4ff 100%); border-radius: 16px; padding: 20px 15px; color: white; position: relative; overflow: hidden; }
+    .arena-card.victory-mode { animation: victoryFlash 0.3s infinite alternate; }
+    @keyframes victoryFlash { 0% { background: #ff4757; } 50% { background: #2ed573; } 100% { background: #1e90ff; } }
+    
+    .vote-arena { 
+      position: relative; 
+      height: 280px; 
+      background: rgba(0, 0, 0, 0.3); 
+      border-radius: 12px; 
+      padding: 15px; 
+    }
+    
+    #yesBtn { 
+      position: absolute; 
+      top: 50%; 
+      left: 50%; 
+      transform: translate(-50%, -50%); 
+      background: #2ed573; 
+      padding: 14px 26px; 
+      z-index: 5; 
+      margin: 0;
+    }
+
+    #noBtn { 
+      position: absolute; 
+      left: 8%; 
+      top: 12%; 
+      background: #ff7675; 
+      transition: left 0.1s ease, top 0.1s ease; 
+      white-space: nowrap; 
+      touch-action: none; 
+      z-index: 10; 
+      margin: 0;
+    }
+    
+    .victory-banner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 50; padding: 15px; color: #fff; animation: fade-in 0.5s ease-out; }
+    .victory-banner h1 { font-size: 1.8rem; color: #fff200; }
+    .victory-banner p { font-size: 1.1rem; }
+
+    /* --- PAGE 3: DELULU LIST --- */
+    .delulu-display-box { background: #000; color: #00ff00; border: 2px solid #333; border-radius: 10px; padding: 20px 15px; text-align: left; min-height: 120px; font-family: monospace; margin-bottom: 15px; font-size: 0.95rem; line-height: 1.4; display: flex; align-items: center; }
+    .typing-cursor { animation: blink-caret 0.75s step-end infinite; }
+    @keyframes blink-caret { 50% { opacity: 0; } }
+
+    /* --- PAGE 4: MONKEY HEIGHT COMPARISON --- */
+    .monkey-container { display: flex; justify-content: space-around; align-items: flex-end; height: 220px; margin: 20px 0; background: #f1f2f6; border-radius: 12px; padding: 15px; border: 2px dashed #ced6e0; }
+    .monkey-box { display: flex; flex-direction: column; align-items: center; }
+    .monkey-title { font-weight: 900; color: var(--text); margin-bottom: 8px; font-size: 0.85rem; text-align: center; }
+    
+    /* --- PAGE 5: FINAL CASUAL MESSAGE BOX --- */
+    .ending-message-box {
+      background: #2d3436;
+      color: #f1f2f6;
+      border-radius: 12px;
+      padding: 18px;
+      margin: 15px 0;
+      text-align: left;
+      border-left: 4px solid #ff4757;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    }
+    .ending-message-box p {
+      font-size: 0.88rem;
+      line-height: 1.5;
+      margin-bottom: 12px;
+      color: #dfe4ea;
+    }
+    .ending-message-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* --- WITCH LOADER --- */
+    #loader { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100vw; 
+      height: 100vh; 
+      background: var(--bg-color); 
+      z-index: 3000; 
+      display: none; 
+      flex-direction: column; 
+      justify-content: center; 
+      align-items: center; 
+      text-align: center; 
+      padding: 20px;
+    }
+    
+    .witch-circle {
+      width: 130px; height: 130px; background: #1e1e2f; border-radius: 50%; border: 4px solid #ff4757;
+      display: flex; justify-content: center; align-items: center; box-shadow: 0 0 25px rgba(255, 71, 87, 0.7);
+      animation: float 2.5s infinite ease-in-out; margin: 12px auto;
+    }
+    .custom-witch { position: relative; width: 75px; height: 75px; display: flex; justify-content: center; align-items: center; }
+    .witch-hat { position: absolute; top: -4px; font-size: 2.6rem; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.5)); z-index: 2; }
+    .witch-face { position: absolute; top: 28px; font-size: 1.8rem; z-index: 1; }
+    .witch-sparkles { position: absolute; bottom: -4px; font-size: 1.2rem; animation: pulseSparkle 1s infinite alternate; }
+    @keyframes pulseSparkle { from { transform: scale(0.9); opacity: 0.6; } to { transform: scale(1.2); opacity: 1; } }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+  </style>
+</head>
+<body>
+
+  <!-- Vertical Ruler -->
+  <div class="vertical-ruler">
+    <div class="ruler-mark"></div><div class="ruler-mark"></div>
+    <div class="ruler-mark tingu-mark"><span class="ruler-text tingu-text">4'0"</span></div>
+    <div class="ruler-mark"></div><div class="ruler-mark"></div>
+  </div>
+
+  <!-- CENTERED CUSTOM WITCH LOADER SCREEN -->
+  <div id="loader">
+    <div style="font-size: 2rem; font-weight: 900; color: #ff4757; text-shadow: 1px 1px 0px #2d3436;">ALIZAY</div>
+    <div style="font-size: 2.2rem; margin: 5px 0;">⬇️</div>
+    <div class="witch-circle">
+      <div class="custom-witch">
+        <div class="witch-hat">🎩</div>
+        <div class="witch-face">😼</div>
+        <div class="witch-sparkles">✨</div>
+      </div>
+    </div>
+    <p style="margin-top:15px; font-weight:900; font-size: 1.1rem; color: #2d3436; text-transform: uppercase;">Loading classified data...</p>
+  </div>
+
+  <!-- HEADER -->
+  <div class="delulu-header-bar">
+    <div style="font-weight: 800; font-size: 0.85rem; color: #ff4757; text-transform: uppercase;">Time Before Alizay's next delulu</div>
+    <div class="progress-container"><div class="progress-bar" id="deluluBar"></div></div>
+  </div>
+
+  <div class="app-container" id="appFrame">
+    
+    <!-- PAGE 1: CAPTCHA -->
+    <div class="page active" id="page1">
+      <h2>Security Checkpoint</h2>
+      <p style="font-weight: bold; color: #ff4757;">Since Alizay is short, she needs a ladder to get to the Captcha.</p>
+      
+      <div class="room-canvas">
+        <div class="room-shelf"></div>
+        <div class="captcha-on-shelf" id="captchaBox">🔒 CAPTCHA BAR (TOO HIGH)</div>
+        
+        <div class="room-ladder" id="roomLadder">
+          <div class="ladder-rung"></div><div class="ladder-rung"></div><div class="ladder-rung"></div>
+        </div>
+
+        <div class="character-avatar" id="charAvatar">
+          <div class="photo-head"></div>
+          <div class="char-arms"></div>
+          <div class="char-body"></div>
+          <div class="char-legs"></div>
+        </div>
+      </div>
+
+      <div id="captchaStatus" style="color:#ff4757; font-weight:700; margin-bottom:10px; font-size: 0.9rem;">Warning: Height Deficit!</div>
+      <button class="btn" id="reachBtn" onclick="attemptReach()">Try to Reach 🏃‍♀️</button>
+      <button class="btn btn-secondary" id="ladderBtn" onclick="grabLadder()">GRAB A LADDER 🪜</button>
+      <button class="btn" id="p1NextBtn" style="display:none; background: #2ed573;" onclick="transitionPage(2)">Continue ➔</button>
+    </div>
+
+    <!-- PAGE 2: ARENA -->
+    <div class="page" id="page2">
+      <div class="arena-card" id="arenaCard">
+        <h1>"Is Adeel the undisputed Best Monitor?"</h1>
+        <div class="vote-arena" id="voteArea">
+          <button class="btn" id="yesBtn" onclick="agreeBest()">YES! Absolutely 👑</button>
+          <button class="btn" id="noBtn" onmouseover="dodgeNo(event)" ontouchstart="dodgeNo(event)" onclick="dodgeNo(event)">NO 😜</button>
+        </div>
+      </div>
+      <button class="btn btn-secondary" id="p2NextBtn" style="display:none; margin-top:15px;" onclick="transitionPage(3)">Proceed ➔</button>
+    </div>
+
+    <!-- PAGE 3: ONE-BY-ONE DELULU LIST -->
+    <div class="page" id="page3">
+      <h2>Alizay vs. Reality 🥊</h2>
+      <p style="margin-bottom: 8px;">Reviewing classified database records...</p>
+      
+      <div class="delulu-display-box" id="singleDeluluBox">
+        <span id="deluluText"></span><span class="typing-cursor" id="typingCursor">_</span>
+      </div>
+      
+      <button class="btn" onclick="showNextDelusion()">Next Delusion 🔄</button>
+      <br>
+      <button class="btn btn-secondary" onclick="transitionPage(4)" style="margin-top: 10px;">Check Height Records 📏 ➔</button>
+    </div>
+
+    <!-- PAGE 4: MONKEY HEIGHT COMPARISON -->
+    <div class="page" id="page4">
+      <h2>Official Height Diagnostics</h2>
+      <p>Scientific breakdown of the Tingu phenomenon.</p>
+      
+      <div class="monkey-container">
+        <div class="monkey-box">
+          <div class="monkey-title">How tall she thinks she is</div>
+          <div style="font-size: 5rem; line-height: 1;">🦍</div>
+        </div>
+        <div class="monkey-box">
+          <div class="monkey-title">How tall she actually is</div>
+          <div style="font-size: 1.2rem; line-height: 1;">🐒</div>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary" style="margin-top: 10px;" onclick="transitionPage(5)">Read Final Verdict 📜 ➔</button>
+    </div>
+
+    <!-- PAGE 5: FINAL CASUAL MESSAGE -->
+    <div class="page" id="page5">
+      <h2>Final System Verdict 📜</h2>
+      <p>A message from the Chief Executive Monitor.</p>
+
+      <div class="ending-message-box">
+        <p>Hey Tingu Pingu, Best monitor here, honestly, watching you struggle just to reach the top shelf on this website really proves that nothing has changed since class 5. We haven't even been in the same school or classes for years now, but somehow you still find ways to be annoying from miles away.</p>
+        <p>Let’s be completely real here. No matter how many fake ladders or running buttons I put on a screen, it's never gonna make you stop arguing. You’re still gonna sit there and defend your absolute silly opinions like your life depends on it. Even when everyone knows you're totally wrong, you'll still swear on your life that you won the argument, and the second you start losing, you just threaten to ghost or disappear. You're just gonna keep acting like you're always right, and refusing to admit basic common sense.</p>
+        <p>And honestly? That’s literally the only reason any of this is even funny. Even though we went our separate ways way back after class 5, whenever we actually talk, the vibe and the stupid arguments never change. Finding someone who is just as stubborn, who can take all these roasts without actually crying, and who throws the exact same nonsense right back at me is honestly rare. It just makes all the random late-night chatting and trolling actually worth it.</p>
+        <p>So yeah, just take the Loss and accept I am the BEST like a normal person. Accept your spot right behind me as second-best, and stop trying to reach things that are way too high for you. You're stuck dealing with this level of trolling for the rest of your life now, deal with it.</p>
+        <p style="text-align: right; font-weight: bold; color: #ff6b81; margin-top: 12px;">— The bestttt monitor Adeel</p>
+      </div>
+
+      <button class="btn" style="margin-top: 10px;" onclick="transitionPage(1)">Restart Trolling 🔄</button>
+    </div>
+
+  </div>
+
+  <script>
+    let confettiInterval = null;
+    let confettiTimeout = null;
+
+    // --- NAVIGATION ---
+    function transitionPage(num) {
+      if (confettiInterval) clearInterval(confettiInterval);
+      if (confettiTimeout) clearTimeout(confettiTimeout);
+      confettiInterval = null;
+      confettiTimeout = null;
+      try { confetti.reset(); } catch(e) {}
+      document.querySelectorAll('canvas').forEach(c => c.remove());
+      
+      document.getElementById('arenaCard').classList.remove('victory-mode');
+
+      document.getElementById('loader').style.display = 'flex';
+      setTimeout(() => {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page' + num).classList.add('active');
+        document.getElementById('loader').style.display = 'none';
+        
+        if(num === 3 && currentDeluluIndex === 0) showNextDelusion(); 
+      }, 4500); 
+    }
+
+    // --- TIMER ---
+    const deluluBar = document.getElementById('deluluBar');
+    setInterval(() => {
+      const elapsed = Date.now() % 3000;
+      deluluBar.style.width = ((3000 - elapsed) / 3000 * 100) + '%';
+    }, 20);
+
+    // --- PAGE 1: LADDER ---
+    function attemptReach() {
+      const char = document.getElementById('charAvatar');
+      char.style.transform = "translateX(-50%) translateY(-15px)";
+      setTimeout(() => { char.style.transform = "translateX(-50%) translateY(0)"; }, 300);
+      document.getElementById('captchaStatus').textContent = "❌ FAIL: Too short to climb on your own LMAO! Grab a ladder Tingu!";
+    }
+    
+    function grabLadder() {
+      document.getElementById('roomLadder').classList.add('drop-in');
+      setTimeout(() => {
+        document.getElementById('charAvatar').style.bottom = "150px";
+        document.getElementById('captchaBox').style.background = "#2ed573";
+        document.getElementById('captchaBox').style.borderColor = "#2ed573";
+        document.getElementById('captchaBox').style.color = "white";
+        document.getElementById('captchaBox').innerHTML = "✅ FINALLY REACHED!";
+        document.getElementById('reachBtn').style.display = 'none';
+        document.getElementById('ladderBtn').style.display = 'none';
+        document.getElementById('captchaStatus').style.color = "#2ed573";
+        document.getElementById('captchaStatus').textContent = "Access Granted.";
+        document.getElementById('p1NextBtn').style.display = 'inline-flex';
+      }, 800);
+    }
+
+    // --- PAGE 2: MOBILE-FRIENDLY TOUCH DODGING ---
+    const noBtn = document.getElementById('noBtn');
+    const memeTaunts = ["Too short!", "Missed me!", "Try harder Tingu!", "Delulu logic!", "Nice try Bhootni", "Nope LMAO", "Adeel wins", "Can't touch this", "Error: Stubborn", "Still the Best Monitor!"];
+    let lastZoneIndex = -1;
+
+    function dodgeNo(e) {
+      if(e) e.preventDefault(); 
+      
+      const safeZones = [
+        { left: '5%', top: '8%' },
+        { left: '60%', top: '8%' },
+        { left: '5%', top: '78%' },
+        { left: '60%', top: '78%' },
+        { left: '30%', top: '5%' },
+        { left: '30%', top: '82%' }
+      ];
+
+      let newZoneIndex;
+      do {
+        newZoneIndex = Math.floor(Math.random() * safeZones.length);
+      } while (newZoneIndex === lastZoneIndex);
+      
+      lastZoneIndex = newZoneIndex;
+
+      noBtn.innerText = memeTaunts[Math.floor(Math.random() * memeTaunts.length)];
+      noBtn.style.left = safeZones[newZoneIndex].left;
+      noBtn.style.top = safeZones[newZoneIndex].top;
+    }
+
+    function agreeBest() {
+      const arena = document.getElementById('arenaCard');
+      arena.classList.add('victory-mode');
+      
+      const banner = document.createElement('div');
+      banner.className = 'victory-banner';
+      banner.innerHTML = "<h1>👑 TRUTH ACCEPTED 👑</h1><p style='font-size:1.2rem; font-weight:bold;'>Adeel is formally recognized as the Best Monitor!</p><div style='font-size: 3rem; margin-top:15px;'>🏆✨🔥</div>";
+      arena.appendChild(banner);
+
+      document.getElementById('p2NextBtn').style.display = 'inline-flex';
+      
+      if (!confettiInterval) {
+        confettiInterval = setInterval(() => {
+          confetti({ particleCount: 30, spread: 80, origin: { x: Math.random(), y: Math.random() - 0.2 }, zIndex: 9999 });
+        }, 300);
+
+        confettiTimeout = setTimeout(() => {
+          clearInterval(confettiInterval);
+          confettiInterval = null;
+          try { confetti.reset(); } catch(e) {}
+          document.querySelectorAll('canvas').forEach(c => c.remove());
+        }, 5000); 
+      }
+    }
+
+    // --- PAGE 3: 30 DELULUS & FAST TYPEWRITER ---
+    const deluluList = [
+      "> DELULU #01: Thinks she can beat Adeel in Kashmir. 🏔️",
+      "> DELULU #02: Believes she is cooler than Adeel. 😎",
+      "> DELULU #03: Thinks saying 'I will disappear' is a valid argument. 🚪",
+      "> DELULU #04: Claims her sohbat is actually good for people. 💀",
+      "> DELULU #05: Believes 4'0\" is average human height. 🧍‍♀️",
+      "> DELULU #06: Thinks drinking chai literally makes her taller. ☕",
+      "> DELULU #07: Claims she is the best monitor when the title belongs to Adeel. 👑",
+      "> DELULU #08: Thinks she won the last debate (she didn't). 🏆",
+      "> DELULU #09: Believes her eye-rolls actually intimidate people. 🙄",
+      "> DELULU #10: Thinks she can reach the top shelf without a stool. 🪜",
+      "> DELULU #11: Thinks she's scary when she's just a pocket-sized Bhootni. 👻",
+      "> DELULU #12: Claims her emails are 'formal and professional'. 📧",
+      "> DELULU #13: Believes she can hijack the Best Monitor title. 🛑",
+      "> DELULU #14: Thinks people don't get headaches in her sohbat. 🤕",
+      "> DELULU #15: Assumes she's the protagonist when she's the Tingu sidekick. 🐧",
+      "> DELULU #16: Thinks her logic makes sense. 🧠",
+      "> DELULU #17: Believes she doesn't need a booster seat in the car. 🚗",
+      "> DELULU #18: Claims being the 'best dushman' is a flex. 🤡",
+      "> DELULU #19: Thinks she can win arguments by threatening to ghost. 👻",
+      "> DELULU #20: Refuses to accept basic mathematics and logic. 🧮",
+      "> DELULU #21: Thinks her chai addiction is 'just a preference'. 🍵",
+      "> DELULU #22: Believes she can reach the top of the whiteboard. 🖍️",
+      "> DELULU #23: Thinks Adeel is too shy to admit she's the best (LMAO). 🤣",
+      "> DELULU #24: Assumes anyone actually believes her delusions. 📉",
+      "> DELULU #25: Thinks she can outsmart the Chief Executive Monitor. 👔",
+      "> DELULU #26: Claims she doesn't need to stand on her tiptoes. 🩰",
+      "> DELULU #27: Believes she can click the NO button on this website. 🖱️",
+      "> DELULU #28: Thinks she has the upper hand in this rivalry. ⚔️",
+      "> DELULU #29: Refuses to sign the counter-settlement agreement. 📝",
+      "> DELULU #30: Ultimately thinks she will ever be better than Adeel. 👑"
+    ];
+
+    let currentDeluluIndex = 0;
+    let typeWriterTimeout;
+
+    function showNextDelusion() {
+      clearTimeout(typeWriterTimeout);
+      const textSpan = document.getElementById('deluluText');
+      const cursor = document.getElementById('typingCursor');
+      
+      textSpan.innerHTML = '';
+      cursor.style.display = 'inline';
+      
+      let textToType = deluluList[currentDeluluIndex];
+      currentDeluluIndex = (currentDeluluIndex + 1) % deluluList.length;
+      
+      let i = 0;
+      function typeWriter() {
+        if (i < textToType.length) {
+          textSpan.innerHTML += textToType.charAt(i);
+          i++;
+          typeWriterTimeout = setTimeout(typeWriter, 10); 
+        }
+      }
+      typeWriter();
+    }
+  </script>
+</body>
+</html>
